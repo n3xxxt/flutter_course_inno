@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+import 'ui/screens/catalog_screen.dart';
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
+void main() {
+  runApp(
+    MaterialApp(
+      title: 'Каталог космоса',
       debugShowCheckedModeBanner: false,
-      home: Scaffold(body: Center(child: Text('Hello. world!'))),
-    );
-  }
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2F5D50)),
+        scaffoldBackgroundColor: const Color(0xFFF3F1EC),
+      ),
+      home: const CatalogScreen(),
+    ),
+  );
 }
