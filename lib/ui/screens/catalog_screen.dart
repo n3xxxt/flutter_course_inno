@@ -1,126 +1,44 @@
 import 'package:flutter/material.dart';
 
-import '../../domain/entities/space_item.dart';
+import '../../data/space_items_api.dart';
+import '../notifiers/catalog_notifier.dart';
+import '../notifiers/favorites_notifier.dart';
+import '../widgets/add_space_item_form.dart';
 import '../widgets/space_item_card.dart';
 
-const _items = [
-  SpaceItem(
-    id: 1,
-    title: 'Марс',
-    subtitle: 'Солнечная система · с древности',
-    category: SpaceCategory.planet,
-    tags: ['Земная группа'],
-    color: Color(0xFF8E3B2C),
-    description: 'Красная планета с самым высоким вулканом — Олимпом.',
-  ),
-  SpaceItem(
-    id: 2,
-    title: 'Юпитер',
-    subtitle: 'Солнечная система · с древности',
-    category: SpaceCategory.planet,
-    tags: ['Газовый гигант'],
-    color: Color(0xFFB08550),
-  ),
-  SpaceItem(
-    id: 3,
-    title: 'Сатурн',
-    subtitle: 'Солнечная система · с древности',
-    category: SpaceCategory.planet,
-    tags: ['Кольца'],
-    color: Color(0xFFB59A3C),
-    description: 'Самые заметные кольца из льда и камня.',
-  ),
-  SpaceItem(
-    id: 4,
-    title: 'Нептун',
-    subtitle: 'Урбен Леверье, Иоганн Галле · 1846',
-    category: SpaceCategory.planet,
-    tags: ['Ледяной гигант'],
-    color: Color(0xFF3F5682),
-  ),
-  SpaceItem(
-    id: 5,
-    title: 'Восток-1',
-    subtitle: 'ОКБ-1, Сергей Королёв · 1961',
-    category: SpaceCategory.mission,
-    tags: ['Пилотируемая'],
-    color: Color(0xFF9C3E3E),
-    description: 'Первый полёт человека в космос — Юрий Гагарин.',
-  ),
-  SpaceItem(
-    id: 6,
-    title: 'Аполлон-11',
-    subtitle: 'НАСА · 1969',
-    category: SpaceCategory.mission,
-    tags: ['Пилотируемая', 'Луна'],
-    color: Color(0xFF5E6470),
-  ),
-  SpaceItem(
-    id: 7,
-    title: 'Вояджер-1: самый далёкий от Земли рукотворный объект в истории',
-    subtitle: 'Лаборатория реактивного движения НАСА · 1977',
-    category: SpaceCategory.mission,
-    tags: ['Межзвёздная'],
-    color: Color(0xFF6C5A7E),
-  ),
-  SpaceItem(
-    id: 8,
-    title: 'Луноход-1',
-    subtitle: 'НПО имени Лавочкина · 1970',
-    category: SpaceCategory.mission,
-    tags: ['Луна'],
-    color: Color(0xFF3F7270),
-  ),
-  SpaceItem(
-    id: 9,
-    title: 'Хаббл',
-    subtitle: 'НАСА, ЕКА · 1990',
-    category: SpaceCategory.telescope,
-    tags: ['Орбитальный'],
-    color: Color(0xFF2F6E62),
-    description: 'Орбитальный телескоп, снявший «Столпы творения».',
-  ),
-  SpaceItem(
-    id: 10,
-    title: 'Джеймс Уэбб',
-    subtitle: 'НАСА, ЕКА, ККА · 2021',
-    category: SpaceCategory.telescope,
-    tags: ['Инфракрасный'],
-    color: Color(0xFFB07A2E),
-  ),
-];
-
 class CatalogScreen extends StatefulWidget {
-  const CatalogScreen({super.key});
+  const CatalogScreen({super.key, required this.api});
+
+  final SpaceItemsApi api;
 
   @override
   State<CatalogScreen> createState() => _CatalogScreenState();
 }
 
 class _CatalogScreenState extends State<CatalogScreen> {
-  final Set<int> _likedIds = {};
-  bool _onlyFavorites = false;
+  late final CatalogNotifier _catalog;
+  final _favorites = FavoritesNotifier();
+  final _onlyFavorites = ValueNotifier(false);
+  final _showForm = ValueNotifier(false);
 
-  void _toggleLike(int id) {
-    setState(() {
-      if (_likedIds.contains(id)) {
-        _likedIds.remove(id);
-      } else {
-        _likedIds.add(id);
-      }
-    });
+  @override
+  void initState() {
+    super.initState();
+    _catalog = CatalogNotifier(widget.api);
+    _catalog.load();
   }
 
-  void _toggleOnlyFavorites() {
-    setState(() => _onlyFavorites = !_onlyFavorites);
+  @override
+  void dispose() {
+    _catalog.dispose();
+    _favorites.dispose();
+    _onlyFavorites.dispose();
+    _showForm.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final visibleItems = _onlyFavorites
-        ? _items.where((item) => _likedIds.contains(item.id)).toList()
-        : _items;
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -128,6 +46,21 @@ class _CatalogScreenState extends State<CatalogScreen> {
         scrolledUnderElevation: 0,
         toolbarHeight: 72,
         centerTitle: false,
+        actions: [
+          ListenableBuilder(
+            listenable: Listenable.merge([_showForm, _catalog]),
+            builder: (context, _) {
+              final show = _showForm.value;
+              return IconButton(
+                icon: Icon(show ? Icons.close : Icons.add),
+                tooltip: show ? 'Скрыть форму' : 'Добавить объект',
+                onPressed: (_catalog.isLoading || _catalog.error != null)
+                    ? null
+                    : () => _showForm.value = !show,
+              );
+            },
+          ),
+        ],
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -139,9 +72,12 @@ class _CatalogScreenState extends State<CatalogScreen> {
                 color: Color(0xFF1A1A1A),
               ),
             ),
-            Text(
-              '${_items.length} объектов в каталоге',
-              style: const TextStyle(fontSize: 13, color: Colors.black54),
+            ListenableBuilder(
+              listenable: _catalog,
+              builder: (context, _) => Text(
+                '${_catalog.items.length} объектов в каталоге',
+                style: const TextStyle(fontSize: 13, color: Colors.black54),
+              ),
             ),
           ],
         ),
@@ -153,45 +89,122 @@ class _CatalogScreenState extends State<CatalogScreen> {
               children: [
                 const Icon(Icons.favorite, size: 18, color: Color(0xFFD9534F)),
                 const SizedBox(width: 6),
-                Text(
-                  'В избранном: ${_likedIds.length}',
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1A1A1A),
+                ListenableBuilder(
+                  listenable: _favorites,
+                  builder: (context, _) => Text(
+                    'В избранном: ${_favorites.count}',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1A1A1A),
+                    ),
                   ),
                 ),
                 const Spacer(),
-                FilterChip(
-                  label: const Text('Только избранные'),
-                  selected: _onlyFavorites,
-                  onSelected: (_) => _toggleOnlyFavorites(),
+                ListenableBuilder(
+                  listenable: _onlyFavorites,
+                  builder: (context, _) => FilterChip(
+                    label: const Text('Только избранные'),
+                    selected: _onlyFavorites.value,
+                    onSelected: (_) =>
+                        _onlyFavorites.value = !_onlyFavorites.value,
+                  ),
                 ),
               ],
             ),
           ),
         ),
       ),
-      body: visibleItems.isEmpty
-          ? const Center(
-              child: Text(
-                'Ничего не нашлось',
-                style: TextStyle(fontSize: 16, color: Colors.black54),
+      body: ListenableBuilder(
+        listenable: _catalog,
+        builder: (context, _) => _buildBody(),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_catalog.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_catalog.error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.cloud_off, size: 48, color: Colors.black38),
+              const SizedBox(height: 12),
+              const Text(
+                'Не удалось загрузить каталог',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: visibleItems.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 12),
-              itemBuilder: (_, index) {
-                final item = visibleItems[index];
-                return SpaceItemCard(
-                  item: item,
-                  isLiked: _likedIds.contains(item.id),
-                  onLikeTap: () => _toggleLike(item.id),
-                );
-              },
-            ),
+              const SizedBox(height: 4),
+              Text(
+                _catalog.error!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.black54),
+              ),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: _catalog.load,
+                child: const Text('Обновить'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        _catalog,
+        _favorites,
+        _onlyFavorites,
+        _showForm,
+      ]),
+      builder: (context, _) {
+        final items = _catalog.items;
+        final visibleItems = _onlyFavorites.value
+            ? items.where((item) => _favorites.isLiked(item.id)).toList()
+            : items;
+        return CustomScrollView(
+          slivers: [
+            if (_showForm.value)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: AddSpaceItemForm(catalog: _catalog),
+                ),
+              ),
+            if (visibleItems.isEmpty)
+              const SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: Text(
+                    'Ничего не нашлось',
+                    style: TextStyle(fontSize: 16, color: Colors.black54),
+                  ),
+                ),
+              )
+            else
+              SliverPadding(
+                padding: const EdgeInsets.all(16),
+                sliver: SliverList.separated(
+                  itemCount: visibleItems.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
+                  itemBuilder: (_, index) {
+                    final item = visibleItems[index];
+                    return SpaceItemCard(
+                      item: item,
+                      isLiked: _favorites.isLiked(item.id),
+                      onLikeTap: () => _favorites.toggle(item.id),
+                    );
+                  },
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }

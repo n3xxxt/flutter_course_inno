@@ -19,8 +19,6 @@ class SpaceItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final description = item.description;
-
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -54,17 +52,19 @@ class SpaceItemCard extends StatelessWidget {
                     color: Color(0xFF1A1A1A),
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  item.subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 13, color: Colors.black54),
-                ),
-                if (description != null) ...[
+                if (item.subtitle.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    item.subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 13, color: Colors.black54),
+                  ),
+                ],
+                if (item.description.isNotEmpty) ...[
                   const SizedBox(height: 6),
                   Text(
-                    description,
+                    item.description,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -120,7 +120,7 @@ class _CatalogCover extends StatelessWidget {
           ),
           Center(
             child: Text(
-              item.title.characters.first,
+              item.title.characters.take(1).toString(),
               style: TextStyle(
                 fontSize: 40,
                 fontWeight: FontWeight.w600,
