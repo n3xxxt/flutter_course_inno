@@ -22,6 +22,7 @@ class SpaceItem {
     required this.tags,
     required this.color,
     required this.description,
+    this.createdAt,
   });
 
   /// Черновик нового элемента: id выдаёт сервер.
@@ -30,20 +31,32 @@ class SpaceItem {
     this.subtitle = '',
     this.category = SpaceCategory.planet,
   }) : id = '',
+       createdAt = null,
        tags = const [],
        description = '',
        color = _defaultColor;
 
   /// Создаёт элемент из JSON-объекта сервера.
   factory SpaceItem.fromJson(Map<String, dynamic> json) {
+    final categoryName = json['category'];
+    final rawColor = json['color'];
+    final parsedColor = rawColor is String
+        ? int.tryParse('FF$rawColor', radix: 16)
+        : null;
     return SpaceItem(
       id: json['id'] as String,
       title: json['title'] as String,
-      subtitle: json['subtitle'] as String,
-      category: SpaceCategory.values.byName(json['category'] as String),
-      tags: List<String>.from(json['tags'] as List),
-      color: Color(int.parse('FF${json['color']}', radix: 16)),
-      description: json['description'] as String,
+      subtitle: json['subtitle'] as String? ?? '',
+      category: SpaceCategory.values.firstWhere(
+        (c) => c.name == categoryName,
+        orElse: () => SpaceCategory.planet,
+      ),
+      tags: json['tags'] == null
+          ? const []
+          : List<String>.from(json['tags'] as List),
+      color: parsedColor == null ? _defaultColor : Color(parsedColor),
+      description: json['description'] as String? ?? '',
+      createdAt: json['createdAt'] as DateTime?,
     );
   }
 
@@ -54,6 +67,26 @@ class SpaceItem {
   final List<String> tags;
   final Color color;
   final String description;
+  final DateTime? createdAt;
+
+  /// Копия элемента с изменёнными полями.
+  SpaceItem copyWith({
+    String? title,
+    String? subtitle,
+    SpaceCategory? category,
+    String? description,
+  }) {
+    return SpaceItem(
+      id: id,
+      title: title ?? this.title,
+      subtitle: subtitle ?? this.subtitle,
+      category: category ?? this.category,
+      tags: tags,
+      color: color,
+      description: description ?? this.description,
+      createdAt: createdAt,
+    );
+  }
 
   /// JSON для отправки на сервер, без id.
   Map<String, dynamic> toJson() {
