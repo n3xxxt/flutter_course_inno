@@ -30,10 +30,10 @@ class SpaceItem {
     required this.title,
     this.subtitle = '',
     this.category = SpaceCategory.planet,
+    this.description = '',
   }) : id = '',
        createdAt = null,
        tags = const [],
-       description = '',
        color = _defaultColor;
 
   /// Создаёт элемент из JSON-объекта сервера.

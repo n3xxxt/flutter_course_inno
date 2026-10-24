@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import '../../data/space_items_api.dart';
 import '../notifiers/catalog_notifier.dart';
 import '../notifiers/favorites_notifier.dart';
-import '../widgets/add_space_item_form.dart';
 import '../widgets/space_item_card.dart';
+import '../widgets/space_item_form_sheet.dart';
 
 class CatalogScreen extends StatefulWidget {
   const CatalogScreen({super.key, required this.api});
@@ -19,7 +19,6 @@ class _CatalogScreenState extends State<CatalogScreen> {
   late final CatalogNotifier _catalog;
   final _favorites = FavoritesNotifier();
   final _onlyFavorites = ValueNotifier(false);
-  final _showForm = ValueNotifier(false);
 
   @override
   void initState() {
@@ -33,7 +32,6 @@ class _CatalogScreenState extends State<CatalogScreen> {
     _catalog.dispose();
     _favorites.dispose();
     _onlyFavorites.dispose();
-    _showForm.dispose();
     super.dispose();
   }
 
@@ -48,17 +46,14 @@ class _CatalogScreenState extends State<CatalogScreen> {
         centerTitle: false,
         actions: [
           ListenableBuilder(
-            listenable: Listenable.merge([_showForm, _catalog]),
-            builder: (context, _) {
-              final show = _showForm.value;
-              return IconButton(
-                icon: Icon(show ? Icons.close : Icons.add),
-                tooltip: show ? 'Скрыть форму' : 'Добавить объект',
-                onPressed: (_catalog.isLoading || _catalog.error != null)
-                    ? null
-                    : () => _showForm.value = !show,
-              );
-            },
+            listenable: _catalog,
+            builder: (context, _) => IconButton(
+              icon: const Icon(Icons.add),
+              tooltip: 'Добавить объект',
+              onPressed: (_catalog.isLoading || _catalog.error != null)
+                  ? null
+                  : () => showSpaceItemSheet(context, onSubmit: _catalog.add),
+            ),
           ),
         ],
         title: Column(
@@ -156,12 +151,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
       );
     }
     return ListenableBuilder(
-      listenable: Listenable.merge([
-        _catalog,
-        _favorites,
-        _onlyFavorites,
-        _showForm,
-      ]),
+      listenable: Listenable.merge([_catalog, _favorites, _onlyFavorites]),
       builder: (context, _) {
         final items = _catalog.items;
         final visibleItems = _onlyFavorites.value
@@ -169,13 +159,6 @@ class _CatalogScreenState extends State<CatalogScreen> {
             : items;
         return CustomScrollView(
           slivers: [
-            if (_showForm.value)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: AddSpaceItemForm(catalog: _catalog),
-                ),
-              ),
             if (visibleItems.isEmpty)
               const SliverFillRemaining(
                 hasScrollBody: false,
@@ -198,6 +181,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                       item: item,
                       isLiked: _favorites.isLiked(item.id),
                       onLikeTap: () => _favorites.toggle(item.id),
+                      onTap: () {},
                     );
                   },
                 ),
