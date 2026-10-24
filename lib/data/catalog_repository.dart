@@ -20,6 +20,7 @@ class CatalogRepository {
     : _firestore = firestore ?? FirebaseFirestore.instance;
 
   static const _timeout = Duration(seconds: 10);
+  static const _writeTimeout = Duration(seconds: 5);
 
   final FirebaseFirestore _firestore;
 
@@ -54,33 +55,30 @@ class CatalogRepository {
   }
 
   Future<void> setFavorite(String uid, String itemId, {required bool liked}) {
-    return _guard(
-      () => _userDoc(uid)
-          .set({
-            'favorites': liked
-                ? FieldValue.arrayUnion([itemId])
-                : FieldValue.arrayRemove([itemId]),
-          }, SetOptions(merge: true))
-          .timeout(_timeout),
+    return _write(
+      () => _userDoc(uid).set({
+        'favorites': liked
+            ? FieldValue.arrayUnion([itemId])
+            : FieldValue.arrayRemove([itemId]),
+      }, SetOptions(merge: true)),
     );
   }
 
   Future<void> addItem(SpaceItem draft) {
-    return _guard(
-      () => _items
-          .add({...draft.toJson(), 'createdAt': FieldValue.serverTimestamp()})
-          .timeout(_timeout),
+    return _write(
+      () => _items.add({
+        ...draft.toJson(),
+        'createdAt': FieldValue.serverTimestamp(),
+      }),
     );
   }
 
   Future<void> updateItem(SpaceItem item) {
-    return _guard(
-      () => _items.doc(item.id).update(item.toJson()).timeout(_timeout),
-    );
+    return _write(() => _items.doc(item.id).update(item.toJson()));
   }
 
   Future<void> deleteItem(String id) {
-    return _guard(() => _items.doc(id).delete().timeout(_timeout));
+    return _write(() => _items.doc(id).delete());
   }
 
   List<SpaceItem> _parse(QuerySnapshot<Map<String, dynamic>> snapshot) {
@@ -127,6 +125,16 @@ class CatalogRepository {
     }
   }
 
+  Future<void> _write(Future<void> Function() action) {
+    return _guard(() async {
+      try {
+        await action().timeout(_writeTimeout);
+      } on TimeoutException {
+        return;
+      }
+    });
+  }
+
   StreamTransformer<T, T> _errorMapper<T>() {
     return StreamTransformer<T, T>.fromHandlers(
       handleError: (error, stackTrace, sink) {
@@ -145,6 +153,7 @@ class CatalogRepository {
     return switch (code) {
       'unavailable' || 'timeout' => 'Нет соединения с сервером',
       'permission-denied' => 'Нет доступа к каталогу',
+      'not-found' => 'Объект уже удалён',
       _ => 'Ошибка сервера: $code',
     };
   }

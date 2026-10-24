@@ -28,7 +28,11 @@ class _DetailsScreenState extends State<DetailsScreen> {
     if (state.itemById(widget.itemId) != null) return;
     _closing = true;
     final messenger = ScaffoldMessenger.of(context);
-    Navigator.of(context).pop();
+    final navigator = Navigator.of(context);
+    final route = ModalRoute.of(context);
+    if (route == null || !route.isActive) return;
+    navigator.popUntil((r) => r == route);
+    navigator.pop();
     messenger.showSnackBar(const SnackBar(content: Text('Объект удалён')));
   }
 

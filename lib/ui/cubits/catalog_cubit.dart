@@ -18,6 +18,7 @@ class CatalogCubit extends Cubit<CatalogState> {
   StreamSubscription<List<SpaceItem>>? _itemsSub;
   StreamSubscription<Set<String>>? _favoritesSub;
   Set<String> _favorites = const {};
+  final _pendingLikes = <String>{};
   bool _onlyFavorites = false;
   String _query = '';
   int _generation = 0;
@@ -41,6 +42,7 @@ class CatalogCubit extends Cubit<CatalogState> {
     } on CatalogException catch (e) {
       if (isClosed || generation != _generation) return;
       await _cancelSubscriptions();
+      if (isClosed || generation != _generation) return;
       emit(CatalogError(e.message));
       return;
     }
@@ -60,8 +62,13 @@ class CatalogCubit extends Cubit<CatalogState> {
   }
 
   /// Переключает лайк элемента для текущего пользователя.
-  Future<void> toggleLike(String id) {
-    return _repository.setFavorite(_uid, id, liked: !_favorites.contains(id));
+  Future<void> toggleLike(String id) async {
+    if (!_pendingLikes.add(id)) return;
+    try {
+      await _repository.setFavorite(_uid, id, liked: !_favorites.contains(id));
+    } finally {
+      _pendingLikes.remove(id);
+    }
   }
 
   /// Включает или выключает фильтр «Только избранные».

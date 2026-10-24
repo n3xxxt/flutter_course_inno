@@ -196,6 +196,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
       itemBuilder: (context, index) {
         final item = items[index];
         return SpaceItemCard(
+          key: ValueKey(item.id),
           item: item,
           isLiked: state.isLiked(item.id),
           onLikeTap: () => _toggleLike(context, item.id),
