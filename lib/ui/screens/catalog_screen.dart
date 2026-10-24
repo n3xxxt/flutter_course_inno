@@ -1,194 +1,269 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../data/space_items_api.dart';
-import '../notifiers/catalog_notifier.dart';
-import '../notifiers/favorites_notifier.dart';
+import '../../data/catalog_repository.dart';
+import '../cubits/auth_cubit.dart';
+import '../cubits/catalog_cubit.dart';
+import '../cubits/catalog_state.dart';
 import '../widgets/space_item_card.dart';
 import '../widgets/space_item_form_sheet.dart';
+import 'details_screen.dart';
 
 class CatalogScreen extends StatefulWidget {
-  const CatalogScreen({super.key, required this.api});
-
-  final SpaceItemsApi api;
+  const CatalogScreen({super.key});
 
   @override
   State<CatalogScreen> createState() => _CatalogScreenState();
 }
 
 class _CatalogScreenState extends State<CatalogScreen> {
-  late final CatalogNotifier _catalog;
-  final _favorites = FavoritesNotifier();
-  final _onlyFavorites = ValueNotifier(false);
-
-  @override
-  void initState() {
-    super.initState();
-    _catalog = CatalogNotifier(widget.api);
-    _catalog.load();
-  }
+  final _searchController = TextEditingController();
 
   @override
   void dispose() {
-    _catalog.dispose();
-    _favorites.dispose();
-    _onlyFavorites.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        scrolledUnderElevation: 0,
-        toolbarHeight: 72,
-        centerTitle: false,
-        actions: [
-          ListenableBuilder(
-            listenable: _catalog,
-            builder: (context, _) => IconButton(
-              icon: const Icon(Icons.add),
-              tooltip: 'Добавить объект',
-              onPressed: (_catalog.isLoading || _catalog.error != null)
-                  ? null
-                  : () => showSpaceItemSheet(context, onSubmit: _catalog.add),
-            ),
-          ),
-        ],
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Каталог космоса',
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1A1A1A),
-              ),
-            ),
-            ListenableBuilder(
-              listenable: _catalog,
-              builder: (context, _) => Text(
-                '${_catalog.items.length} объектов в каталоге',
-                style: const TextStyle(fontSize: 13, color: Colors.black54),
-              ),
-            ),
-          ],
+  Future<void> _toggleLike(BuildContext context, String id) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await context.read<CatalogCubit>().toggleLike(id);
+    } on CatalogException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    }
+  }
+
+  Future<void> _add(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final cubit = context.read<CatalogCubit>();
+    final added = await showSpaceItemSheet(context, onSubmit: cubit.addItem);
+    if (added == true) {
+      messenger.showSnackBar(const SnackBar(content: Text('Объект добавлен')));
+    }
+  }
+
+  void _clearSearch(BuildContext context) {
+    _searchController.clear();
+    context.read<CatalogCubit>().search('');
+  }
+
+  void _openDetails(BuildContext context, String id) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => BlocProvider.value(
+          value: context.read<CatalogCubit>(),
+          child: DetailsScreen(itemId: id),
         ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(52),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-            child: Row(
-              children: [
-                const Icon(Icons.favorite, size: 18, color: Color(0xFFD9534F)),
-                const SizedBox(width: 6),
-                ListenableBuilder(
-                  listenable: _favorites,
-                  builder: (context, _) => Text(
-                    'В избранном: ${_favorites.count}',
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1A1A1A),
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                ListenableBuilder(
-                  listenable: _onlyFavorites,
-                  builder: (context, _) => FilterChip(
-                    label: const Text('Только избранные'),
-                    selected: _onlyFavorites.value,
-                    onSelected: (_) =>
-                        _onlyFavorites.value = !_onlyFavorites.value,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-      body: ListenableBuilder(
-        listenable: _catalog,
-        builder: (context, _) => _buildBody(),
       ),
     );
   }
 
-  Widget _buildBody() {
-    if (_catalog.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (_catalog.error != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.cloud_off, size: 48, color: Colors.black38),
-              const SizedBox(height: 12),
-              const Text(
-                'Не удалось загрузить каталог',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                _catalog.error!,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.black54),
-              ),
-              const SizedBox(height: 16),
-              FilledButton(
-                onPressed: _catalog.load,
-                child: const Text('Обновить'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-    return ListenableBuilder(
-      listenable: Listenable.merge([_catalog, _favorites, _onlyFavorites]),
-      builder: (context, _) {
-        final items = _catalog.items;
-        final visibleItems = _onlyFavorites.value
-            ? items.where((item) => _favorites.isLiked(item.id)).toList()
-            : items;
-        return CustomScrollView(
-          slivers: [
-            if (visibleItems.isEmpty)
-              const SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(
-                  child: Text(
-                    'Ничего не нашлось',
-                    style: TextStyle(fontSize: 16, color: Colors.black54),
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<CatalogCubit, CatalogState>(
+      builder: (context, state) {
+        final loaded = state is CatalogLoaded ? state : null;
+        final cubit = context.read<CatalogCubit>();
+        return Scaffold(
+          appBar: AppBar(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.transparent,
+            scrolledUnderElevation: 0,
+            toolbarHeight: 72,
+            centerTitle: false,
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Каталог космоса',
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1A1A1A),
                   ),
                 ),
-              )
-            else
-              SliverPadding(
-                padding: const EdgeInsets.all(16),
-                sliver: SliverList.separated(
-                  itemCount: visibleItems.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 12),
-                  itemBuilder: (_, index) {
-                    final item = visibleItems[index];
-                    return SpaceItemCard(
-                      item: item,
-                      isLiked: _favorites.isLiked(item.id),
-                      onLikeTap: () => _favorites.toggle(item.id),
-                      onTap: () {},
-                    );
-                  },
+                if (loaded != null)
+                  Text(
+                    '${loaded.items.length} объектов в каталоге',
+                    style: const TextStyle(fontSize: 13, color: Colors.black54),
+                  ),
+              ],
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.add),
+                tooltip: 'Добавить объект',
+                onPressed: loaded == null ? null : () => _add(context),
+              ),
+              IconButton(
+                icon: const Icon(Icons.logout),
+                tooltip: 'Выйти',
+                onPressed: () => context.read<AuthCubit>().signOut(),
+              ),
+            ],
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(112),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                child: Column(
+                  children: [
+                    ListenableBuilder(
+                      listenable: _searchController,
+                      builder: (context, _) => TextField(
+                        controller: _searchController,
+                        enabled: loaded != null,
+                        onChanged: cubit.search,
+                        decoration: InputDecoration(
+                          hintText: 'Поиск по названию',
+                          prefixIcon: const Icon(Icons.search),
+                          suffixIcon: _searchController.text.isEmpty
+                              ? null
+                              : IconButton(
+                                  icon: const Icon(Icons.clear),
+                                  tooltip: 'Очистить',
+                                  onPressed: () => _clearSearch(context),
+                                ),
+                          isDense: true,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.favorite,
+                          size: 18,
+                          color: Color(0xFFD9534F),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'В избранном: ${loaded?.favoritesCount ?? 0}',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1A1A1A),
+                          ),
+                        ),
+                        const Spacer(),
+                        FilterChip(
+                          label: const Text('Только избранные'),
+                          selected: loaded?.onlyFavorites ?? false,
+                          onSelected: loaded == null
+                              ? null
+                              : (_) => cubit.toggleOnlyFavorites(),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-          ],
+            ),
+          ),
+          body: switch (state) {
+            CatalogLoading() => const Center(
+              child: CircularProgressIndicator(),
+            ),
+            CatalogError(:final message) => _ErrorView(
+              message: message,
+              onRetry: cubit.load,
+            ),
+            CatalogLoaded() => _buildList(context, state),
+          },
         );
       },
+    );
+  }
+
+  Widget _buildList(BuildContext context, CatalogLoaded state) {
+    final items = state.visibleItems;
+    if (items.isEmpty) {
+      final query = state.query.trim();
+      final text = query.isNotEmpty
+          ? 'Ничего не найдено по запросу «$query»'
+          : state.onlyFavorites
+          ? 'В избранном пока пусто'
+          : 'Каталог пуст — добавьте первый объект';
+      return _EmptyView(text: text);
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: items.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final item = items[index];
+        return SpaceItemCard(
+          item: item,
+          isLiked: state.isLiked(item.id),
+          onLikeTap: () => _toggleLike(context, item.id),
+          onTap: () => _openDetails(context, item.id),
+        );
+      },
+    );
+  }
+}
+
+class _EmptyView extends StatelessWidget {
+  const _EmptyView({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.inbox_outlined, size: 48, color: Colors.black38),
+            const SizedBox(height: 12),
+            Text(
+              text,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16, color: Colors.black54),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorView extends StatelessWidget {
+  const _ErrorView({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.cloud_off, size: 48, color: Colors.black38),
+            const SizedBox(height: 12),
+            const Text(
+              'Не удалось загрузить каталог',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.black54),
+            ),
+            const SizedBox(height: 16),
+            FilledButton(onPressed: onRetry, child: const Text('Обновить')),
+          ],
+        ),
+      ),
     );
   }
 }

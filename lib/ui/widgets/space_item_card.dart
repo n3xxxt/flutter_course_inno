@@ -97,11 +97,11 @@ class SpaceItemCard extends StatelessWidget {
                         spacing: 6,
                         runSpacing: 6,
                         children: [
-                          _CatalogTag(
+                          SpaceItemTag(
                             label: item.category.label,
                             icon: item.category.icon,
                           ),
-                          for (final tag in item.tags) _CatalogTag(label: tag),
+                          for (final tag in item.tags) SpaceItemTag(label: tag),
                         ],
                       ),
                     ],
@@ -146,8 +146,9 @@ class _CatalogCover extends StatelessWidget {
   }
 }
 
-class _CatalogTag extends StatelessWidget {
-  const _CatalogTag({required this.label, this.icon});
+/// Чип с категорией или тегом элемента каталога.
+class SpaceItemTag extends StatelessWidget {
+  const SpaceItemTag({super.key, required this.label, this.icon});
 
   final String label;
   final IconData? icon;

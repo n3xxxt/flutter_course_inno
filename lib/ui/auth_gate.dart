@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../data/auth_repository.dart';
-import '../data/mock_api_space_items_api.dart';
+import '../data/catalog_repository.dart';
 import 'cubits/auth_cubit.dart';
 import 'cubits/auth_state.dart';
+import 'cubits/catalog_cubit.dart';
 import 'cubits/login_cubit.dart';
 import 'screens/catalog_screen.dart';
 import 'screens/login_screen.dart';
@@ -29,7 +30,13 @@ class AuthGate extends StatelessWidget {
             create: (context) => LoginCubit(context.read<AuthRepository>()),
             child: const LoginScreen(),
           ),
-          AuthAuthenticated() => CatalogScreen(api: MockApiSpaceItemsApi()),
+          AuthAuthenticated(:final user) => BlocProvider(
+            key: ValueKey(user.uid),
+            create: (context) =>
+                CatalogCubit(context.read<CatalogRepository>(), uid: user.uid)
+                  ..load(),
+            child: const CatalogScreen(),
+          ),
         };
       },
     );
