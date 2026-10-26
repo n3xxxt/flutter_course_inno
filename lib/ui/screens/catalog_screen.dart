@@ -1,94 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../domain/entities/space_item.dart';
+import '../../core/app_strings.dart';
+import '../../data/catalog_repository.dart';
+import '../cubits/auth_cubit.dart';
+import '../cubits/catalog_cubit.dart';
+import '../cubits/catalog_state.dart';
 import '../widgets/space_item_card.dart';
-
-const _items = [
-  SpaceItem(
-    id: 1,
-    title: 'Марс',
-    subtitle: 'Солнечная система · с древности',
-    category: SpaceCategory.planet,
-    tags: ['Земная группа'],
-    color: Color(0xFF8E3B2C),
-    description: 'Красная планета с самым высоким вулканом — Олимпом.',
-  ),
-  SpaceItem(
-    id: 2,
-    title: 'Юпитер',
-    subtitle: 'Солнечная система · с древности',
-    category: SpaceCategory.planet,
-    tags: ['Газовый гигант'],
-    color: Color(0xFFB08550),
-  ),
-  SpaceItem(
-    id: 3,
-    title: 'Сатурн',
-    subtitle: 'Солнечная система · с древности',
-    category: SpaceCategory.planet,
-    tags: ['Кольца'],
-    color: Color(0xFFB59A3C),
-    description: 'Самые заметные кольца из льда и камня.',
-  ),
-  SpaceItem(
-    id: 4,
-    title: 'Нептун',
-    subtitle: 'Урбен Леверье, Иоганн Галле · 1846',
-    category: SpaceCategory.planet,
-    tags: ['Ледяной гигант'],
-    color: Color(0xFF3F5682),
-  ),
-  SpaceItem(
-    id: 5,
-    title: 'Восток-1',
-    subtitle: 'ОКБ-1, Сергей Королёв · 1961',
-    category: SpaceCategory.mission,
-    tags: ['Пилотируемая'],
-    color: Color(0xFF9C3E3E),
-    description: 'Первый полёт человека в космос — Юрий Гагарин.',
-  ),
-  SpaceItem(
-    id: 6,
-    title: 'Аполлон-11',
-    subtitle: 'НАСА · 1969',
-    category: SpaceCategory.mission,
-    tags: ['Пилотируемая', 'Луна'],
-    color: Color(0xFF5E6470),
-  ),
-  SpaceItem(
-    id: 7,
-    title: 'Вояджер-1: самый далёкий от Земли рукотворный объект в истории',
-    subtitle: 'Лаборатория реактивного движения НАСА · 1977',
-    category: SpaceCategory.mission,
-    tags: ['Межзвёздная'],
-    color: Color(0xFF6C5A7E),
-  ),
-  SpaceItem(
-    id: 8,
-    title: 'Луноход-1',
-    subtitle: 'НПО имени Лавочкина · 1970',
-    category: SpaceCategory.mission,
-    tags: ['Луна'],
-    color: Color(0xFF3F7270),
-  ),
-  SpaceItem(
-    id: 9,
-    title: 'Хаббл',
-    subtitle: 'НАСА, ЕКА · 1990',
-    category: SpaceCategory.telescope,
-    tags: ['Орбитальный'],
-    color: Color(0xFF2F6E62),
-    description: 'Орбитальный телескоп, снявший «Столпы творения».',
-  ),
-  SpaceItem(
-    id: 10,
-    title: 'Джеймс Уэбб',
-    subtitle: 'НАСА, ЕКА, ККА · 2021',
-    category: SpaceCategory.telescope,
-    tags: ['Инфракрасный'],
-    color: Color(0xFFB07A2E),
-  ),
-];
+import '../widgets/space_item_form_sheet.dart';
+import 'details_screen.dart';
 
 class CatalogScreen extends StatefulWidget {
   const CatalogScreen({super.key});
@@ -98,100 +18,258 @@ class CatalogScreen extends StatefulWidget {
 }
 
 class _CatalogScreenState extends State<CatalogScreen> {
-  final Set<int> _likedIds = {};
-  bool _onlyFavorites = false;
+  final _searchController = TextEditingController();
 
-  void _toggleLike(int id) {
-    setState(() {
-      if (_likedIds.contains(id)) {
-        _likedIds.remove(id);
-      } else {
-        _likedIds.add(id);
-      }
-    });
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
-  void _toggleOnlyFavorites() {
-    setState(() => _onlyFavorites = !_onlyFavorites);
+  Future<void> _toggleLike(BuildContext context, String id) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await context.read<CatalogCubit>().toggleLike(id);
+    } on CatalogException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    }
+  }
+
+  Future<void> _add(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final cubit = context.read<CatalogCubit>();
+    final added = await showSpaceItemSheet(context, onSubmit: cubit.addItem);
+    if (added == true) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text(AppStrings.objectAdded)),
+      );
+    }
+  }
+
+  void _clearSearch(BuildContext context) {
+    _searchController.clear();
+    context.read<CatalogCubit>().search('');
+  }
+
+  void _openDetails(BuildContext context, String id) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => BlocProvider.value(
+          value: context.read<CatalogCubit>(),
+          child: DetailsScreen(itemId: id),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final visibleItems = _onlyFavorites
-        ? _items.where((item) => _likedIds.contains(item.id)).toList()
-        : _items;
-
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        scrolledUnderElevation: 0,
-        toolbarHeight: 72,
-        centerTitle: false,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Каталог космоса',
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1A1A1A),
-              ),
-            ),
-            Text(
-              '${_items.length} объектов в каталоге',
-              style: const TextStyle(fontSize: 13, color: Colors.black54),
-            ),
-          ],
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(52),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-            child: Row(
+    return BlocBuilder<CatalogCubit, CatalogState>(
+      builder: (context, state) {
+        final loaded = state is CatalogLoaded ? state : null;
+        final cubit = context.read<CatalogCubit>();
+        return Scaffold(
+          appBar: AppBar(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.transparent,
+            scrolledUnderElevation: 0,
+            toolbarHeight: 72,
+            centerTitle: false,
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.favorite, size: 18, color: Color(0xFFD9534F)),
-                const SizedBox(width: 6),
-                Text(
-                  'В избранном: ${_likedIds.length}',
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
+                const Text(
+                  AppStrings.appTitle,
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
                     color: Color(0xFF1A1A1A),
                   ),
                 ),
-                const Spacer(),
-                FilterChip(
-                  label: const Text('Только избранные'),
-                  selected: _onlyFavorites,
-                  onSelected: (_) => _toggleOnlyFavorites(),
-                ),
+                if (loaded != null)
+                  Text(
+                    AppStrings.itemsCount(loaded.items.length),
+                    style: const TextStyle(fontSize: 13, color: Colors.black54),
+                  ),
               ],
             ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.add),
+                tooltip: AppStrings.addObjectTooltip,
+                onPressed: loaded == null ? null : () => _add(context),
+              ),
+              IconButton(
+                icon: const Icon(Icons.logout),
+                tooltip: AppStrings.signOutTooltip,
+                onPressed: () => context.read<AuthCubit>().signOut(),
+              ),
+            ],
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(112),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: _searchController,
+                      enabled: loaded != null,
+                      onChanged: cubit.search,
+                      decoration: InputDecoration(
+                        hintText: AppStrings.searchHint,
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: (loaded?.query.isEmpty ?? true)
+                            ? null
+                            : IconButton(
+                                icon: const Icon(Icons.clear),
+                                tooltip: AppStrings.clearTooltip,
+                                onPressed: () => _clearSearch(context),
+                              ),
+                        isDense: true,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.favorite,
+                          size: 18,
+                          color: Color(0xFFD9534F),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          AppStrings.favoritesCount(
+                            loaded?.favoritesCount ?? 0,
+                          ),
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1A1A1A),
+                          ),
+                        ),
+                        const Spacer(),
+                        FilterChip(
+                          label: const Text(AppStrings.onlyFavorites),
+                          selected: loaded?.onlyFavorites ?? false,
+                          onSelected: loaded == null
+                              ? null
+                              : (_) => cubit.toggleOnlyFavorites(),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
+          body: switch (state) {
+            CatalogLoading() => const Center(
+              child: CircularProgressIndicator(),
+            ),
+            CatalogError(:final message) => _ErrorView(
+              message: message,
+              onRetry: cubit.load,
+            ),
+            CatalogLoaded() => _buildList(context, state),
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildList(BuildContext context, CatalogLoaded state) {
+    final items = state.visibleItems;
+    if (items.isEmpty) {
+      final query = state.query.trim();
+      final text = query.isNotEmpty
+          ? AppStrings.nothingFound(query)
+          : state.onlyFavorites
+          ? AppStrings.emptyFavorites
+          : AppStrings.emptyCatalog;
+      return _EmptyView(text: text);
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: items.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final item = items[index];
+        return SpaceItemCard(
+          key: ValueKey(item.id),
+          item: item,
+          isLiked: state.isLiked(item.id),
+          onLikeTap: () => _toggleLike(context, item.id),
+          onTap: () => _openDetails(context, item.id),
+        );
+      },
+    );
+  }
+}
+
+class _EmptyView extends StatelessWidget {
+  const _EmptyView({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.inbox_outlined, size: 48, color: Colors.black38),
+            const SizedBox(height: 12),
+            Text(
+              text,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16, color: Colors.black54),
+            ),
+          ],
         ),
       ),
-      body: visibleItems.isEmpty
-          ? const Center(
-              child: Text(
-                'Ничего не нашлось',
-                style: TextStyle(fontSize: 16, color: Colors.black54),
-              ),
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: visibleItems.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 12),
-              itemBuilder: (_, index) {
-                final item = visibleItems[index];
-                return SpaceItemCard(
-                  item: item,
-                  isLiked: _likedIds.contains(item.id),
-                  onLikeTap: () => _toggleLike(item.id),
-                );
-              },
+    );
+  }
+}
+
+class _ErrorView extends StatelessWidget {
+  const _ErrorView({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.cloud_off, size: 48, color: Colors.black38),
+            const SizedBox(height: 12),
+            const Text(
+              AppStrings.catalogLoadFailed,
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
+            const SizedBox(height: 4),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.black54),
+            ),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: onRetry,
+              child: const Text(AppStrings.retryButton),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
