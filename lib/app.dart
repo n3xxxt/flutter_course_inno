@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'core/app_strings.dart';
 import 'data/auth_repository.dart';
 import 'data/catalog_repository.dart';
 import 'ui/auth_gate.dart';
@@ -20,7 +21,7 @@ class App extends StatelessWidget {
       child: BlocProvider(
         create: (context) => AuthCubit(context.read<AuthRepository>()),
         child: MaterialApp(
-          title: 'Каталог космоса',
+          title: AppStrings.appTitle,
           debugShowCheckedModeBanner: false,
           theme: ThemeData(
             colorScheme: ColorScheme.fromSeed(

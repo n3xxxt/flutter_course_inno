@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../core/app_strings.dart';
 import '../domain/entities/auth_user.dart';
 
 /// Ошибка аутентификации с текстом для пользователя.
@@ -57,16 +58,24 @@ class AuthRepository {
 
   String _message(String code) {
     return switch (code) {
-      'invalid-email' => 'Некорректный email',
-      'user-disabled' => 'Аккаунт заблокирован',
-      'user-not-found' ||
-      'wrong-password' ||
-      'invalid-credential' => 'Неверный email или пароль',
-      'email-already-in-use' => 'Этот email уже зарегистрирован',
-      'weak-password' => 'Слишком короткий пароль — минимум 6 символов',
-      'too-many-requests' => 'Слишком много попыток, попробуйте позже',
-      'network-request-failed' => 'Нет соединения с интернетом',
-      _ => 'Не удалось войти: $code',
+      'invalid-email' => AppStrings.withCode(AppStrings.authInvalidEmail, code),
+      'user-disabled' => AppStrings.withCode(AppStrings.authUserDisabled, code),
+      'user-not-found' || 'wrong-password' || 'invalid-credential' =>
+        AppStrings.withCode(AppStrings.authInvalidCredential, code),
+      'email-already-in-use' => AppStrings.withCode(
+        AppStrings.authEmailInUse,
+        code,
+      ),
+      'weak-password' => AppStrings.withCode(AppStrings.authWeakPassword, code),
+      'too-many-requests' => AppStrings.withCode(
+        AppStrings.authTooManyRequests,
+        code,
+      ),
+      'network-request-failed' => AppStrings.withCode(
+        AppStrings.authNetworkFailed,
+        code,
+      ),
+      _ => AppStrings.withCode(AppStrings.authSignInFailed, code),
     };
   }
 }

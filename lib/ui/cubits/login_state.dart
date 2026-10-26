@@ -1,25 +1,29 @@
 /// Состояние формы входа и регистрации.
 class LoginState {
   const LoginState({
-    this.isRegister = false,
+    this.registering = false,
     this.isLoading = false,
     this.error,
+    this.obscurePassword = true,
   });
 
-  final bool isRegister;
+  final bool registering;
   final bool isLoading;
   final String? error;
+  final bool obscurePassword;
 
   LoginState copyWith({
-    bool? isRegister,
+    bool? registering,
     bool? isLoading,
     String? error,
+    bool? obscurePassword,
     bool clearError = false,
   }) {
     return LoginState(
-      isRegister: isRegister ?? this.isRegister,
+      registering: registering ?? this.registering,
       isLoading: isLoading ?? this.isLoading,
       error: clearError ? null : (error ?? this.error),
+      obscurePassword: obscurePassword ?? this.obscurePassword,
     );
   }
 }

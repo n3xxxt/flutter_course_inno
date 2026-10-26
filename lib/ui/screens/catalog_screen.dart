@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../core/app_strings.dart';
 import '../../data/catalog_repository.dart';
 import '../cubits/auth_cubit.dart';
 import '../cubits/catalog_cubit.dart';
@@ -39,7 +40,9 @@ class _CatalogScreenState extends State<CatalogScreen> {
     final cubit = context.read<CatalogCubit>();
     final added = await showSpaceItemSheet(context, onSubmit: cubit.addItem);
     if (added == true) {
-      messenger.showSnackBar(const SnackBar(content: Text('Объект добавлен')));
+      messenger.showSnackBar(
+        const SnackBar(content: Text(AppStrings.objectAdded)),
+      );
     }
   }
 
@@ -76,7 +79,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Каталог космоса',
+                  AppStrings.appTitle,
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
@@ -85,7 +88,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                 ),
                 if (loaded != null)
                   Text(
-                    '${loaded.items.length} объектов в каталоге',
+                    AppStrings.itemsCount(loaded.items.length),
                     style: const TextStyle(fontSize: 13, color: Colors.black54),
                   ),
               ],
@@ -93,12 +96,12 @@ class _CatalogScreenState extends State<CatalogScreen> {
             actions: [
               IconButton(
                 icon: const Icon(Icons.add),
-                tooltip: 'Добавить объект',
+                tooltip: AppStrings.addObjectTooltip,
                 onPressed: loaded == null ? null : () => _add(context),
               ),
               IconButton(
                 icon: const Icon(Icons.logout),
-                tooltip: 'Выйти',
+                tooltip: AppStrings.signOutTooltip,
                 onPressed: () => context.read<AuthCubit>().signOut(),
               ),
             ],
@@ -108,26 +111,23 @@ class _CatalogScreenState extends State<CatalogScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
                 child: Column(
                   children: [
-                    ListenableBuilder(
-                      listenable: _searchController,
-                      builder: (context, _) => TextField(
-                        controller: _searchController,
-                        enabled: loaded != null,
-                        onChanged: cubit.search,
-                        decoration: InputDecoration(
-                          hintText: 'Поиск по названию',
-                          prefixIcon: const Icon(Icons.search),
-                          suffixIcon: _searchController.text.isEmpty
-                              ? null
-                              : IconButton(
-                                  icon: const Icon(Icons.clear),
-                                  tooltip: 'Очистить',
-                                  onPressed: () => _clearSearch(context),
-                                ),
-                          isDense: true,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                    TextField(
+                      controller: _searchController,
+                      enabled: loaded != null,
+                      onChanged: cubit.search,
+                      decoration: InputDecoration(
+                        hintText: AppStrings.searchHint,
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: (loaded?.query.isEmpty ?? true)
+                            ? null
+                            : IconButton(
+                                icon: const Icon(Icons.clear),
+                                tooltip: AppStrings.clearTooltip,
+                                onPressed: () => _clearSearch(context),
+                              ),
+                        isDense: true,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                     ),
@@ -141,7 +141,9 @@ class _CatalogScreenState extends State<CatalogScreen> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          'В избранном: ${loaded?.favoritesCount ?? 0}',
+                          AppStrings.favoritesCount(
+                            loaded?.favoritesCount ?? 0,
+                          ),
                           style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
@@ -150,7 +152,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                         ),
                         const Spacer(),
                         FilterChip(
-                          label: const Text('Только избранные'),
+                          label: const Text(AppStrings.onlyFavorites),
                           selected: loaded?.onlyFavorites ?? false,
                           onSelected: loaded == null
                               ? null
@@ -183,10 +185,10 @@ class _CatalogScreenState extends State<CatalogScreen> {
     if (items.isEmpty) {
       final query = state.query.trim();
       final text = query.isNotEmpty
-          ? 'Ничего не найдено по запросу «$query»'
+          ? AppStrings.nothingFound(query)
           : state.onlyFavorites
-          ? 'В избранном пока пусто'
-          : 'Каталог пуст — добавьте первый объект';
+          ? AppStrings.emptyFavorites
+          : AppStrings.emptyCatalog;
       return _EmptyView(text: text);
     }
     return ListView.separated(
@@ -251,7 +253,7 @@ class _ErrorView extends StatelessWidget {
             const Icon(Icons.cloud_off, size: 48, color: Colors.black38),
             const SizedBox(height: 12),
             const Text(
-              'Не удалось загрузить каталог',
+              AppStrings.catalogLoadFailed,
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 4),
@@ -261,7 +263,10 @@ class _ErrorView extends StatelessWidget {
               style: const TextStyle(color: Colors.black54),
             ),
             const SizedBox(height: 16),
-            FilledButton(onPressed: onRetry, child: const Text('Обновить')),
+            FilledButton(
+              onPressed: onRetry,
+              child: const Text(AppStrings.retryButton),
+            ),
           ],
         ),
       ),

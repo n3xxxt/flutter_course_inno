@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../core/app_strings.dart';
 import '../domain/entities/space_item.dart';
 
 /// Ошибка работы с каталогом с текстом для пользователя.
@@ -25,7 +26,7 @@ class CatalogRepository {
   final FirebaseFirestore _firestore;
 
   CollectionReference<Map<String, dynamic>> get _items =>
-      _firestore.collection('items');
+      _firestore.collection('space_objects');
 
   DocumentReference<Map<String, dynamic>> _userDoc(String uid) =>
       _firestore.doc('users/$uid');
@@ -99,13 +100,8 @@ class CatalogRepository {
   }
 
   SpaceItem? _fromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
-    final data = doc.data();
     try {
-      return SpaceItem.fromJson({
-        ...data,
-        'id': doc.id,
-        'createdAt': (data['createdAt'] as Timestamp?)?.toDate(),
-      });
+      return SpaceItem.fromFirestore(doc);
     } on TypeError {
       return null;
     } on ArgumentError {
@@ -151,10 +147,10 @@ class CatalogRepository {
 
   String _message(String code) {
     return switch (code) {
-      'unavailable' || 'timeout' => 'Нет соединения с сервером',
-      'permission-denied' => 'Нет доступа к каталогу',
-      'not-found' => 'Объект уже удалён',
-      _ => 'Ошибка сервера: $code',
+      'unavailable' || 'timeout' => AppStrings.catalogNoConnection,
+      'permission-denied' => AppStrings.catalogPermissionDenied,
+      'not-found' => AppStrings.catalogNotFound,
+      _ => AppStrings.catalogServerError(code),
     };
   }
 }

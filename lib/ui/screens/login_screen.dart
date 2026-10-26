@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../core/app_strings.dart';
 import '../cubits/login_cubit.dart';
 import '../cubits/login_state.dart';
 
@@ -15,7 +16,6 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _obscure = true;
 
   @override
   void dispose() {
@@ -24,8 +24,15 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _submit() {
-    context.read<LoginCubit>().submit(
+  void _signIn() {
+    context.read<LoginCubit>().signIn(
+      email: _emailController.text,
+      password: _passwordController.text,
+    );
+  }
+
+  void _register() {
+    context.read<LoginCubit>().register(
       email: _emailController.text,
       password: _passwordController.text,
     );
@@ -55,12 +62,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(
-                          'Каталог космоса',
+                          AppStrings.appTitle,
                           style: Theme.of(context).textTheme.headlineSmall,
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          state.isRegister ? 'Регистрация' : 'Вход',
+                          AppStrings.loginSignInTitle,
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                         const SizedBox(height: 20),
@@ -70,7 +77,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           autofillHints: const [AutofillHints.email],
                           textInputAction: TextInputAction.next,
                           decoration: const InputDecoration(
-                            labelText: 'Email',
+                            labelText: AppStrings.emailLabel,
                             border: OutlineInputBorder(),
                           ),
                           onChanged: (_) => cubit.clearError(),
@@ -78,31 +85,24 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 12),
                         TextField(
                           controller: _passwordController,
-                          obscureText: _obscure,
-                          autofillHints: [
-                            state.isRegister
-                                ? AutofillHints.newPassword
-                                : AutofillHints.password,
-                          ],
+                          obscureText: state.obscurePassword,
+                          autofillHints: const [AutofillHints.password],
                           textInputAction: TextInputAction.done,
                           decoration: InputDecoration(
-                            labelText: 'Пароль',
-                            helperText: state.isRegister
-                                ? 'Минимум 6 символов'
-                                : null,
+                            labelText: AppStrings.passwordLabel,
+                            helperText: AppStrings.passwordHelper,
                             border: const OutlineInputBorder(),
                             suffixIcon: IconButton(
                               icon: Icon(
-                                _obscure
+                                state.obscurePassword
                                     ? Icons.visibility_outlined
                                     : Icons.visibility_off_outlined,
                               ),
-                              onPressed: () =>
-                                  setState(() => _obscure = !_obscure),
+                              onPressed: cubit.togglePasswordVisibility,
                             ),
                           ),
                           onChanged: (_) => cubit.clearError(),
-                          onSubmitted: (_) => _submit(),
+                          onSubmitted: (_) => _signIn(),
                         ),
                         if (state.error != null) ...[
                           const SizedBox(height: 12),
@@ -128,29 +128,17 @@ class _LoginScreenState extends State<LoginScreen> {
                         ],
                         const SizedBox(height: 16),
                         FilledButton(
-                          onPressed: state.isLoading ? null : _submit,
-                          child: state.isLoading
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : Text(
-                                  state.isRegister
-                                      ? 'Зарегистрироваться'
-                                      : 'Войти',
-                                ),
+                          onPressed: state.isLoading ? null : _signIn,
+                          child: state.isLoading && !state.registering
+                              ? const _ButtonProgress()
+                              : const Text(AppStrings.signInButton),
                         ),
-                        const SizedBox(height: 4),
-                        TextButton(
-                          onPressed: state.isLoading ? null : cubit.toggleMode,
-                          child: Text(
-                            state.isRegister
-                                ? 'Уже есть аккаунт? Войти'
-                                : 'Нет аккаунта? Зарегистрироваться',
-                          ),
+                        const SizedBox(height: 8),
+                        OutlinedButton(
+                          onPressed: state.isLoading ? null : _register,
+                          child: state.isLoading && state.registering
+                              ? const _ButtonProgress()
+                              : const Text(AppStrings.registerButton),
                         ),
                       ],
                     ),
@@ -161,6 +149,19 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ButtonProgress extends StatelessWidget {
+  const _ButtonProgress();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox(
+      width: 20,
+      height: 20,
+      child: CircularProgressIndicator(strokeWidth: 2),
     );
   }
 }

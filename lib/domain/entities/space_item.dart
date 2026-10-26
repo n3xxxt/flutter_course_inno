@@ -1,9 +1,12 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import '../../core/app_strings.dart';
+
 enum SpaceCategory {
-  planet('Планета', Icons.public),
-  mission('Миссия', Icons.rocket_launch),
-  telescope('Телескоп', Icons.satellite_alt);
+  planet(AppStrings.categoryPlanet, Icons.public),
+  mission(AppStrings.categoryMission, Icons.rocket_launch),
+  telescope(AppStrings.categoryTelescope, Icons.satellite_alt);
 
   const SpaceCategory(this.label, this.icon);
 
@@ -58,6 +61,16 @@ class SpaceItem {
       description: json['description'] as String? ?? '',
       createdAt: json['createdAt'] as DateTime?,
     );
+  }
+
+  /// Создаёт элемент из документа Firestore, id берётся из doc.id.
+  factory SpaceItem.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+    final data = doc.data()!;
+    return SpaceItem.fromJson({
+      ...data,
+      'id': doc.id,
+      'createdAt': (data['createdAt'] as Timestamp?)?.toDate(),
+    });
   }
 
   final String id;

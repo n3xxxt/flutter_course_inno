@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../core/app_strings.dart';
 import '../../domain/entities/space_item.dart';
-import '../notifiers/space_item_form_notifier.dart';
+import '../cubits/space_item_form_cubit.dart';
+import '../cubits/space_item_form_state.dart';
 
 /// Форма добавления и редактирования элемента каталога.
 class SpaceItemForm extends StatefulWidget {
@@ -15,63 +18,73 @@ class SpaceItemForm extends StatefulWidget {
 }
 
 class _SpaceItemFormState extends State<SpaceItemForm> {
-  late final _form = SpaceItemFormNotifier(
-    initial: widget.initial,
-    onSubmit: widget.onSubmit,
+  late final _title = TextEditingController(text: widget.initial?.title);
+  late final _subtitle = TextEditingController(text: widget.initial?.subtitle);
+  late final _description = TextEditingController(
+    text: widget.initial?.description,
   );
 
   @override
   void dispose() {
-    _form.dispose();
+    _title.dispose();
+    _subtitle.dispose();
+    _description.dispose();
     super.dispose();
-  }
-
-  Future<void> _submit() async {
-    final saved = await _form.submit();
-    if (!mounted || !saved) return;
-    Navigator.pop(context, true);
   }
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: _form,
-      builder: (context, _) => _buildForm(),
+    return BlocProvider(
+      create: (_) => SpaceItemFormCubit(
+        initial: widget.initial,
+        onSubmit: widget.onSubmit,
+      ),
+      child: BlocConsumer<SpaceItemFormCubit, SpaceItemFormState>(
+        listenWhen: (previous, current) => !previous.saved && current.saved,
+        listener: (context, state) => Navigator.pop(context, true),
+        builder: (context, state) => _buildForm(context, state),
+      ),
     );
   }
 
-  Widget _buildForm() {
-    final isEditing = _form.isEditing;
+  Widget _buildForm(BuildContext context, SpaceItemFormState state) {
+    final cubit = context.read<SpaceItemFormCubit>();
+    final isEditing = cubit.isEditing;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          isEditing ? 'Редактирование' : 'Новый объект',
+          isEditing ? AppStrings.formEditTitle : AppStrings.formNewTitle,
           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 16),
         TextField(
-          controller: _form.titleController,
+          controller: _title,
+          onChanged: (_) => cubit.titleChanged(),
           textInputAction: TextInputAction.next,
           decoration: InputDecoration(
-            labelText: 'Название *',
-            errorText: _form.showTitleError ? 'Введите название' : null,
+            labelText: AppStrings.titleLabel,
+            errorText: state.showTitleError ? AppStrings.titleError : null,
           ),
         ),
         const SizedBox(height: 12),
         TextField(
-          controller: _form.subtitleController,
+          controller: _subtitle,
           textInputAction: TextInputAction.next,
-          decoration: const InputDecoration(labelText: 'Подпись'),
+          decoration: const InputDecoration(
+            labelText: AppStrings.subtitleLabel,
+          ),
         ),
         const SizedBox(height: 12),
         TextField(
-          controller: _form.descriptionController,
+          controller: _description,
           minLines: 2,
           maxLines: 5,
           keyboardType: TextInputType.multiline,
-          decoration: const InputDecoration(labelText: 'Описание'),
+          decoration: const InputDecoration(
+            labelText: AppStrings.descriptionLabel,
+          ),
         ),
         const SizedBox(height: 16),
         Wrap(
@@ -82,28 +95,34 @@ class _SpaceItemFormState extends State<SpaceItemForm> {
               ChoiceChip(
                 avatar: Icon(category.icon, size: 18),
                 label: Text(category.label),
-                selected: _form.category == category,
-                onSelected: (_) => _form.selectCategory(category),
+                selected: state.category == category,
+                onSelected: (_) => cubit.selectCategory(category),
               ),
           ],
         ),
-        if (_form.submitError != null) ...[
+        if (state.submitError != null) ...[
           const SizedBox(height: 12),
           Text(
-            _form.submitError!,
+            state.submitError!,
             style: TextStyle(color: Theme.of(context).colorScheme.error),
           ),
         ],
         const SizedBox(height: 16),
         FilledButton(
-          onPressed: _form.isSending ? null : _submit,
-          child: _form.isSending
+          onPressed: state.isSending
+              ? null
+              : () => cubit.submit(
+                  title: _title.text,
+                  subtitle: _subtitle.text,
+                  description: _description.text,
+                ),
+          child: state.isSending
               ? const SizedBox(
                   width: 18,
                   height: 18,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : Text(isEditing ? 'Сохранить' : 'Добавить'),
+              : Text(isEditing ? AppStrings.saveButton : AppStrings.addButton),
         ),
       ],
     );
