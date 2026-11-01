@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../data/catalog_repository.dart';
-import '../cubits/auth_cubit.dart';
-import '../cubits/catalog_cubit.dart';
-import '../cubits/catalog_state.dart';
+import '../../bloc/auth/auth_cubit.dart';
+import '../../bloc/catalog/catalog_cubit.dart';
+import '../../bloc/catalog/catalog_state.dart';
 import '../widgets/space_item_card.dart';
 import '../widgets/space_item_form_sheet.dart';
 import 'details_screen.dart';

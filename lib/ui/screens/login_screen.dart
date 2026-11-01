@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../cubits/login_cubit.dart';
-import '../cubits/login_state.dart';
+import '../../bloc/login/login_cubit.dart';
+import '../../bloc/login/login_state.dart';
 import '../../core/app_strings.dart';
 
 /// Экран входа и регистрации.

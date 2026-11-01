@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'data/auth_repository.dart';
 import 'data/catalog_repository.dart';
 import 'ui/auth_gate.dart';
-import 'ui/cubits/auth_cubit.dart';
+import 'bloc/auth/auth_cubit.dart';
 import 'core/app_strings.dart';
 
 /// Корневой виджет приложения.

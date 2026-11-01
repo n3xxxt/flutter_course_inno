@@ -3,10 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../data/auth_repository.dart';
 import '../data/catalog_repository.dart';
-import 'cubits/auth_cubit.dart';
-import 'cubits/auth_state.dart';
-import 'cubits/catalog_cubit.dart';
-import 'cubits/login_cubit.dart';
+import '../bloc/auth/auth_cubit.dart';
+import '../bloc/auth/auth_state.dart';
+import '../bloc/catalog/catalog_cubit.dart';
+import '../bloc/login/login_cubit.dart';
 import 'screens/catalog_screen.dart';
 import 'screens/login_screen.dart';
 

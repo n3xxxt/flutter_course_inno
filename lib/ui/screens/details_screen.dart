@@ -3,8 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../data/catalog_repository.dart';
 import '../../domain/entities/space_item.dart';
-import '../cubits/catalog_cubit.dart';
-import '../cubits/catalog_state.dart';
+import '../../bloc/catalog/catalog_cubit.dart';
+import '../../bloc/catalog/catalog_state.dart';
 import '../widgets/animated_like_button.dart';
 import '../widgets/space_item_card.dart';
 import '../widgets/space_item_cover.dart';
