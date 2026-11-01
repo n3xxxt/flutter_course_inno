@@ -1,9 +1,14 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:json_annotation/json_annotation.dart';
 
 import '../domain/entities/space_item.dart';
 import '../core/app_strings.dart';
+import 'dto/space_item_dto.dart';
+import 'dto/user_profile_dto.dart';
+import 'mappers/space_item_mapper.dart';
+import 'mappers/user_profile_mapper.dart';
 
 /// Ошибка работы с каталогом с текстом для пользователя.
 class CatalogException implements Exception {
@@ -48,9 +53,15 @@ class CatalogRepository {
     return _userDoc(uid)
         .snapshots()
         .map((doc) {
-          final favorites = doc.data()?['favorites'];
-          if (favorites is! List) return <String>{};
-          return favorites.whereType<String>().toSet();
+          final data = doc.data();
+          if (data == null) return <String>{};
+          try {
+            return UserProfileDto.fromJson(data).toFavorites();
+          } on CheckedFromJsonException {
+            return <String>{};
+          } on TypeError {
+            return <String>{};
+          }
         })
         .transform(_errorMapper());
   }
@@ -68,14 +79,14 @@ class CatalogRepository {
   Future<void> addItem(SpaceItem draft) {
     return _write(
       () => _items.add({
-        ...draft.toJson(),
+        ...draft.toDto().toJson(),
         'createdAt': FieldValue.serverTimestamp(),
       }),
     );
   }
 
   Future<void> updateItem(SpaceItem item) {
-    return _write(() => _items.doc(item.id).update(item.toJson()));
+    return _write(() => _items.doc(item.id).update(item.toDto().toJson()));
   }
 
   Future<void> deleteItem(String id) {
@@ -100,13 +111,10 @@ class CatalogRepository {
   }
 
   SpaceItem? _fromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
-    final data = doc.data();
     try {
-      return SpaceItem.fromJson({
-        ...data,
-        'id': doc.id,
-        'createdAt': (data['createdAt'] as Timestamp?)?.toDate(),
-      });
+      return SpaceItemDto.fromJson(doc.data()).copyWith(id: doc.id).toEntity();
+    } on CheckedFromJsonException {
+      return null;
     } on TypeError {
       return null;
     } on ArgumentError {

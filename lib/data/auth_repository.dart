@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../domain/entities/auth_user.dart';
 import '../core/app_strings.dart';
+import 'mappers/auth_user_mapper.dart';
 
 /// Ошибка аутентификации с текстом для пользователя.
 class AuthException implements Exception {
@@ -44,8 +45,7 @@ class AuthRepository {
   Future<void> signOut() => _guard(_auth.signOut);
 
   AuthUser? _toUser(User? user) {
-    if (user == null) return null;
-    return AuthUser(uid: user.uid, email: user.email);
+    return user?.toEntity();
   }
 
   Future<void> _guard(Future<void> Function() action) async {
