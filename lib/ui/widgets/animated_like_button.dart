@@ -55,26 +55,53 @@ class _AnimatedLikeButtonState extends State<AnimatedLikeButton>
 
   @override
   Widget build(BuildContext context) {
-    return ScaleTransition(
+    return _LikeButtonView(
       scale: _scale,
+      isLiked: widget.isLiked,
+      onTap: _handleTap,
+      size: widget.size,
+      iconSize: widget.iconSize,
+    );
+  }
+}
+
+class _LikeButtonView extends StatelessWidget {
+  const _LikeButtonView({
+    required this.scale,
+    required this.isLiked,
+    required this.onTap,
+    required this.size,
+    required this.iconSize,
+  });
+
+  final Animation<double> scale;
+  final bool isLiked;
+  final VoidCallback onTap;
+  final double size;
+  final double iconSize;
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: scale,
       child: Material(
         color: Colors.white,
         shape: const CircleBorder(),
         child: InkWell(
-          onTap: _handleTap,
+          onTap: onTap,
           customBorder: const CircleBorder(),
           child: SizedBox(
-            width: widget.size,
-            height: widget.size,
+            width: size,
+            height: size,
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 200),
               transitionBuilder: (child, animation) =>
                   ScaleTransition(scale: animation, child: child),
               child: Icon(
-                widget.isLiked ? Icons.favorite : Icons.favorite_border,
-                key: ValueKey(widget.isLiked),
-                size: widget.iconSize,
-                color: widget.isLiked
+                isLiked ? Icons.favorite : Icons.favorite_border,
+                key: ValueKey(isLiked),
+                size: iconSize,
+                color: isLiked
                     ? const Color(0xFFD9534F)
                     : const Color(0xFF555555),
               ),

@@ -34,6 +34,33 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return _LoginView(
+      emailController: _emailController,
+      passwordController: _passwordController,
+      obscure: _obscure,
+      onToggleObscure: () => setState(() => _obscure = !_obscure),
+      onSubmit: _submit,
+    );
+  }
+}
+
+class _LoginView extends StatelessWidget {
+  const _LoginView({
+    required this.emailController,
+    required this.passwordController,
+    required this.obscure,
+    required this.onToggleObscure,
+    required this.onSubmit,
+  });
+
+  final TextEditingController emailController;
+  final TextEditingController passwordController;
+  final bool obscure;
+  final VoidCallback onToggleObscure;
+  final VoidCallback onSubmit;
+
+  @override
+  Widget build(BuildContext context) {
     final cubit = context.read<LoginCubit>();
     return Scaffold(
       body: SafeArea(
@@ -68,7 +95,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 20),
                         TextField(
-                          controller: _emailController,
+                          controller: emailController,
                           keyboardType: TextInputType.emailAddress,
                           autofillHints: const [AutofillHints.email],
                           textInputAction: TextInputAction.next,
@@ -80,8 +107,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 12),
                         TextField(
-                          controller: _passwordController,
-                          obscureText: _obscure,
+                          controller: passwordController,
+                          obscureText: obscure,
                           autofillHints: [
                             state.isRegister
                                 ? AutofillHints.newPassword
@@ -96,16 +123,15 @@ class _LoginScreenState extends State<LoginScreen> {
                             border: const OutlineInputBorder(),
                             suffixIcon: IconButton(
                               icon: Icon(
-                                _obscure
+                                obscure
                                     ? Icons.visibility_outlined
                                     : Icons.visibility_off_outlined,
                               ),
-                              onPressed: () =>
-                                  setState(() => _obscure = !_obscure),
+                              onPressed: onToggleObscure,
                             ),
                           ),
                           onChanged: (_) => cubit.clearError(),
-                          onSubmitted: (_) => _submit(),
+                          onSubmitted: (_) => onSubmit(),
                         ),
                         if (state.error != null) ...[
                           const SizedBox(height: 12),
@@ -131,7 +157,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ],
                         const SizedBox(height: 16),
                         FilledButton(
-                          onPressed: state.isLoading ? null : _submit,
+                          onPressed: state.isLoading ? null : onSubmit,
                           child: state.isLoading
                               ? const SizedBox(
                                   width: 20,

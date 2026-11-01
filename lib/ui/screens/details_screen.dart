@@ -39,10 +39,39 @@ class _DetailsScreenState extends State<DetailsScreen> {
     );
   }
 
+  @override
+  Widget build(BuildContext context) {
+    return BlocConsumer<CatalogCubit, CatalogState>(
+      listener: _onState,
+      builder: (context, state) {
+        final loaded = state is CatalogLoaded ? state : null;
+        final item = loaded?.itemById(widget.itemId) ?? _lastItem;
+        _lastItem = item;
+        return _DetailsView(
+          itemId: widget.itemId,
+          item: item,
+          isLiked: item != null && (loaded?.isLiked(item.id) ?? false),
+        );
+      },
+    );
+  }
+}
+
+class _DetailsView extends StatelessWidget {
+  const _DetailsView({
+    required this.itemId,
+    required this.item,
+    required this.isLiked,
+  });
+
+  final String itemId;
+  final SpaceItem? item;
+  final bool isLiked;
+
   Future<void> _toggleLike(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
     try {
-      await context.read<CatalogCubit>().toggleLike(widget.itemId);
+      await context.read<CatalogCubit>().toggleLike(itemId);
     } on CatalogException catch (e) {
       messenger.showSnackBar(SnackBar(content: Text(e.message)));
     }
@@ -86,7 +115,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
     );
     if (confirmed != true) return;
     try {
-      await cubit.deleteItem(widget.itemId);
+      await cubit.deleteItem(itemId);
     } on CatalogException catch (e) {
       messenger.showSnackBar(SnackBar(content: Text(e.message)));
     }
@@ -94,118 +123,111 @@ class _DetailsScreenState extends State<DetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<CatalogCubit, CatalogState>(
-      listener: _onState,
-      builder: (context, state) {
-        final loaded = state is CatalogLoaded ? state : null;
-        final item = loaded?.itemById(widget.itemId) ?? _lastItem;
-        _lastItem = item;
-        if (item == null) {
-          return Scaffold(
-            appBar: AppBar(),
-            body: const Center(child: Text(AppStrings.itemNotFound)),
-          );
-        }
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(item.title, overflow: TextOverflow.ellipsis),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.edit),
-                tooltip: AppStrings.edit,
-                onPressed: () => _edit(context, item),
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete_outline),
-                tooltip: AppStrings.delete,
-                onPressed: () => _delete(context, item),
-              ),
-            ],
+    final item = this.item;
+    if (item == null) {
+      return Scaffold(
+        appBar: AppBar(),
+        body: const Center(child: Text(AppStrings.itemNotFound)),
+      );
+    }
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(item.title, overflow: TextOverflow.ellipsis),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            tooltip: AppStrings.edit,
+            onPressed: () => _edit(context, item),
           ),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            tooltip: AppStrings.delete,
+            onPressed: () => _delete(context, item),
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
               children: [
-                Stack(
-                  children: [
-                    SpaceItemCover(
-                      item: item,
-                      width: double.infinity,
-                      height: 220,
-                      borderRadius: 14,
-                      letterSize: 96,
-                    ),
-                    Positioned(
-                      top: 12,
-                      right: 12,
-                      child: AnimatedLikeButton(
-                        isLiked: loaded?.isLiked(item.id) ?? false,
-                        onTap: () => _toggleLike(context),
-                        size: 40,
-                        iconSize: 22,
-                      ),
-                    ),
-                  ],
+                SpaceItemCover(
+                  item: item,
+                  width: double.infinity,
+                  height: 220,
+                  borderRadius: 14,
+                  letterSize: 96,
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  item.title,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1A1A1A),
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: AnimatedLikeButton(
+                    isLiked: isLiked,
+                    onTap: () => _toggleLike(context),
+                    size: 40,
+                    iconSize: 22,
                   ),
                 ),
-                if (item.subtitle.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    item.subtitle,
-                    style: const TextStyle(fontSize: 15, color: Colors.black54),
-                  ),
-                ],
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Icon(item.category.icon, size: 18),
-                    const SizedBox(width: 6),
-                    Text(item.category.label),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  AppStrings.description,
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 4),
-                item.description.isEmpty
-                    ? const Text(
-                        AppStrings.noDescription,
-                        style: TextStyle(color: Colors.black45),
-                      )
-                    : Text(item.description),
-                if (item.tags.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                      for (final tag in item.tags) SpaceItemTag(label: tag),
-                    ],
-                  ),
-                ],
-                if (item.createdAt != null) ...[
-                  const SizedBox(height: 16),
-                  Text(
-                    AppStrings.addedOn(_formatDate(item.createdAt!)),
-                    style: const TextStyle(fontSize: 13, color: Colors.black54),
-                  ),
-                ],
               ],
             ),
-          ),
-        );
-      },
+            const SizedBox(height: 16),
+            Text(
+              item.title,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1A1A1A),
+              ),
+            ),
+            if (item.subtitle.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                item.subtitle,
+                style: const TextStyle(fontSize: 15, color: Colors.black54),
+              ),
+            ],
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(item.category.icon, size: 18),
+                const SizedBox(width: 6),
+                Text(item.category.label),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              AppStrings.description,
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 4),
+            item.description.isEmpty
+                ? const Text(
+                    AppStrings.noDescription,
+                    style: TextStyle(color: Colors.black45),
+                  )
+                : Text(item.description),
+            if (item.tags.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final tag in item.tags) SpaceItemTag(label: tag),
+                ],
+              ),
+            ],
+            if (item.createdAt != null) ...[
+              const SizedBox(height: 16),
+              Text(
+                AppStrings.addedOn(_formatDate(item.createdAt!)),
+                style: const TextStyle(fontSize: 13, color: Colors.black54),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

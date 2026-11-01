@@ -37,12 +37,21 @@ class _SpaceItemFormState extends State<SpaceItemForm> {
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: _form,
-      builder: (context, _) => _buildForm(),
+      builder: (context, _) =>
+          _SpaceItemFormView(form: _form, onSubmit: _submit),
     );
   }
+}
 
-  Widget _buildForm() {
-    final isEditing = _form.isEditing;
+class _SpaceItemFormView extends StatelessWidget {
+  const _SpaceItemFormView({required this.form, required this.onSubmit});
+
+  final SpaceItemFormNotifier form;
+  final VoidCallback onSubmit;
+
+  @override
+  Widget build(BuildContext context) {
+    final isEditing = form.isEditing;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -53,16 +62,16 @@ class _SpaceItemFormState extends State<SpaceItemForm> {
         ),
         const SizedBox(height: 16),
         TextField(
-          controller: _form.titleController,
+          controller: form.titleController,
           textInputAction: TextInputAction.next,
           decoration: InputDecoration(
             labelText: AppStrings.formTitleLabel,
-            errorText: _form.showTitleError ? AppStrings.formTitleError : null,
+            errorText: form.showTitleError ? AppStrings.formTitleError : null,
           ),
         ),
         const SizedBox(height: 12),
         TextField(
-          controller: _form.subtitleController,
+          controller: form.subtitleController,
           textInputAction: TextInputAction.next,
           decoration: const InputDecoration(
             labelText: AppStrings.formSubtitleLabel,
@@ -70,7 +79,7 @@ class _SpaceItemFormState extends State<SpaceItemForm> {
         ),
         const SizedBox(height: 12),
         TextField(
-          controller: _form.descriptionController,
+          controller: form.descriptionController,
           minLines: 2,
           maxLines: 5,
           keyboardType: TextInputType.multiline,
@@ -85,22 +94,22 @@ class _SpaceItemFormState extends State<SpaceItemForm> {
               ChoiceChip(
                 avatar: Icon(category.icon, size: 18),
                 label: Text(category.label),
-                selected: _form.category == category,
-                onSelected: (_) => _form.selectCategory(category),
+                selected: form.category == category,
+                onSelected: (_) => form.selectCategory(category),
               ),
           ],
         ),
-        if (_form.submitError != null) ...[
+        if (form.submitError != null) ...[
           const SizedBox(height: 12),
           Text(
-            _form.submitError!,
+            form.submitError!,
             style: TextStyle(color: Theme.of(context).colorScheme.error),
           ),
         ],
         const SizedBox(height: 16),
         FilledButton(
-          onPressed: _form.isSending ? null : _submit,
-          child: _form.isSending
+          onPressed: form.isSending ? null : onSubmit,
+          child: form.isSending
               ? const SizedBox(
                   width: 18,
                   height: 18,

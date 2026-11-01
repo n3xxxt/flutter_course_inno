@@ -26,6 +26,29 @@ class _CatalogScreenState extends State<CatalogScreen> {
     super.dispose();
   }
 
+  void _clearSearch() {
+    _searchController.clear();
+    context.read<CatalogCubit>().search('');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _CatalogView(
+      searchController: _searchController,
+      onClearSearch: _clearSearch,
+    );
+  }
+}
+
+class _CatalogView extends StatelessWidget {
+  const _CatalogView({
+    required this.searchController,
+    required this.onClearSearch,
+  });
+
+  final TextEditingController searchController;
+  final VoidCallback onClearSearch;
+
   Future<void> _toggleLike(BuildContext context, String id) async {
     final messenger = ScaffoldMessenger.of(context);
     try {
@@ -44,11 +67,6 @@ class _CatalogScreenState extends State<CatalogScreen> {
         const SnackBar(content: Text(AppStrings.itemAdded)),
       );
     }
-  }
-
-  void _clearSearch(BuildContext context) {
-    _searchController.clear();
-    context.read<CatalogCubit>().search('');
   }
 
   void _openDetails(BuildContext context, String id) {
@@ -112,20 +130,20 @@ class _CatalogScreenState extends State<CatalogScreen> {
                 child: Column(
                   children: [
                     ListenableBuilder(
-                      listenable: _searchController,
+                      listenable: searchController,
                       builder: (context, _) => TextField(
-                        controller: _searchController,
+                        controller: searchController,
                         enabled: loaded != null,
                         onChanged: cubit.search,
                         decoration: InputDecoration(
                           hintText: AppStrings.searchHint,
                           prefixIcon: const Icon(Icons.search),
-                          suffixIcon: _searchController.text.isEmpty
+                          suffixIcon: searchController.text.isEmpty
                               ? null
                               : IconButton(
                                   icon: const Icon(Icons.clear),
                                   tooltip: AppStrings.clear,
-                                  onPressed: () => _clearSearch(context),
+                                  onPressed: onClearSearch,
                                 ),
                           isDense: true,
                           border: OutlineInputBorder(
