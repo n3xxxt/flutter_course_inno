@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../data/auth_repository.dart';
 import 'login_state.dart';
+import '../../core/app_strings.dart';
 
 /// Логика формы входа и регистрации по email и паролю.
 class LoginCubit extends Cubit<LoginState> {
@@ -20,11 +21,11 @@ class LoginCubit extends Cubit<LoginState> {
   Future<void> submit({required String email, required String password}) async {
     if (state.isLoading) return;
     if (email.trim().isEmpty) {
-      emit(state.copyWith(error: 'Введите email'));
+      emit(state.copyWith(error: AppStrings.loginEnterEmail));
       return;
     }
     if (password.isEmpty) {
-      emit(state.copyWith(error: 'Введите пароль'));
+      emit(state.copyWith(error: AppStrings.loginEnterPassword));
       return;
     }
     emit(state.copyWith(isLoading: true, clearError: true));

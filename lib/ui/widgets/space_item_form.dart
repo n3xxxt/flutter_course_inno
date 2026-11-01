@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../domain/entities/space_item.dart';
 import '../notifiers/space_item_form_notifier.dart';
+import '../../core/app_strings.dart';
 
 /// Форма добавления и редактирования элемента каталога.
 class SpaceItemForm extends StatefulWidget {
@@ -47,7 +48,7 @@ class _SpaceItemFormState extends State<SpaceItemForm> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          isEditing ? 'Редактирование' : 'Новый объект',
+          isEditing ? AppStrings.formEditing : AppStrings.formNewItem,
           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 16),
@@ -55,15 +56,17 @@ class _SpaceItemFormState extends State<SpaceItemForm> {
           controller: _form.titleController,
           textInputAction: TextInputAction.next,
           decoration: InputDecoration(
-            labelText: 'Название *',
-            errorText: _form.showTitleError ? 'Введите название' : null,
+            labelText: AppStrings.formTitleLabel,
+            errorText: _form.showTitleError ? AppStrings.formTitleError : null,
           ),
         ),
         const SizedBox(height: 12),
         TextField(
           controller: _form.subtitleController,
           textInputAction: TextInputAction.next,
-          decoration: const InputDecoration(labelText: 'Подпись'),
+          decoration: const InputDecoration(
+            labelText: AppStrings.formSubtitleLabel,
+          ),
         ),
         const SizedBox(height: 12),
         TextField(
@@ -71,7 +74,7 @@ class _SpaceItemFormState extends State<SpaceItemForm> {
           minLines: 2,
           maxLines: 5,
           keyboardType: TextInputType.multiline,
-          decoration: const InputDecoration(labelText: 'Описание'),
+          decoration: const InputDecoration(labelText: AppStrings.description),
         ),
         const SizedBox(height: 16),
         Wrap(
@@ -103,7 +106,7 @@ class _SpaceItemFormState extends State<SpaceItemForm> {
                   height: 18,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : Text(isEditing ? 'Сохранить' : 'Добавить'),
+              : Text(isEditing ? AppStrings.save : AppStrings.add),
         ),
       ],
     );

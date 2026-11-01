@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../domain/entities/auth_user.dart';
+import '../core/app_strings.dart';
 
 /// Ошибка аутентификации с текстом для пользователя.
 class AuthException implements Exception {
@@ -57,16 +58,16 @@ class AuthRepository {
 
   String _message(String code) {
     return switch (code) {
-      'invalid-email' => 'Некорректный email',
-      'user-disabled' => 'Аккаунт заблокирован',
+      'invalid-email' => AppStrings.authInvalidEmail,
+      'user-disabled' => AppStrings.authUserDisabled,
       'user-not-found' ||
       'wrong-password' ||
-      'invalid-credential' => 'Неверный email или пароль',
-      'email-already-in-use' => 'Этот email уже зарегистрирован',
-      'weak-password' => 'Слишком короткий пароль — минимум 6 символов',
-      'too-many-requests' => 'Слишком много попыток, попробуйте позже',
-      'network-request-failed' => 'Нет соединения с интернетом',
-      _ => 'Не удалось войти: $code',
+      'invalid-credential' => AppStrings.authInvalidCredentials,
+      'email-already-in-use' => AppStrings.authEmailInUse,
+      'weak-password' => AppStrings.authWeakPassword,
+      'too-many-requests' => AppStrings.authTooManyRequests,
+      'network-request-failed' => AppStrings.authNoConnection,
+      _ => AppStrings.authFailed(code),
     };
   }
 }

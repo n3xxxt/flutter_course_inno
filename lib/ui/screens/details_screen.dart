@@ -9,6 +9,7 @@ import '../widgets/animated_like_button.dart';
 import '../widgets/space_item_card.dart';
 import '../widgets/space_item_cover.dart';
 import '../widgets/space_item_form_sheet.dart';
+import '../../core/app_strings.dart';
 
 class DetailsScreen extends StatefulWidget {
   const DetailsScreen({super.key, required this.itemId});
@@ -33,7 +34,9 @@ class _DetailsScreenState extends State<DetailsScreen> {
     if (route == null || !route.isActive) return;
     navigator.popUntil((r) => r == route);
     navigator.pop();
-    messenger.showSnackBar(const SnackBar(content: Text('Объект удалён')));
+    messenger.showSnackBar(
+      const SnackBar(content: Text(AppStrings.itemDeleted)),
+    );
   }
 
   Future<void> _toggleLike(BuildContext context) async {
@@ -55,7 +58,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
     );
     if (saved == true) {
       messenger.showSnackBar(
-        const SnackBar(content: Text('Изменения сохранены')),
+        const SnackBar(content: Text(AppStrings.changesSaved)),
       );
     }
   }
@@ -66,19 +69,17 @@ class _DetailsScreenState extends State<DetailsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Удалить объект?'),
-        content: Text(
-          '“${item.title}” будет удалён из каталога для всех пользователей.',
-        ),
+        title: const Text(AppStrings.deleteItemTitle),
+        content: Text(AppStrings.deleteItemMessage(item.title)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Отмена'),
+            child: const Text(AppStrings.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Удалить'),
+            child: const Text(AppStrings.delete),
           ),
         ],
       ),
@@ -102,7 +103,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
         if (item == null) {
           return Scaffold(
             appBar: AppBar(),
-            body: const Center(child: Text('Объект не найден')),
+            body: const Center(child: Text(AppStrings.itemNotFound)),
           );
         }
         return Scaffold(
@@ -111,12 +112,12 @@ class _DetailsScreenState extends State<DetailsScreen> {
             actions: [
               IconButton(
                 icon: const Icon(Icons.edit),
-                tooltip: 'Изменить',
+                tooltip: AppStrings.edit,
                 onPressed: () => _edit(context, item),
               ),
               IconButton(
                 icon: const Icon(Icons.delete_outline),
-                tooltip: 'Удалить',
+                tooltip: AppStrings.delete,
                 onPressed: () => _delete(context, item),
               ),
             ],
@@ -173,13 +174,13 @@ class _DetailsScreenState extends State<DetailsScreen> {
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'Описание',
+                  AppStrings.description,
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 4),
                 item.description.isEmpty
                     ? const Text(
-                        'Описание пока не добавлено',
+                        AppStrings.noDescription,
                         style: TextStyle(color: Colors.black45),
                       )
                     : Text(item.description),
@@ -196,7 +197,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                 if (item.createdAt != null) ...[
                   const SizedBox(height: 16),
                   Text(
-                    'Добавлено: ${_formatDate(item.createdAt!)}',
+                    AppStrings.addedOn(_formatDate(item.createdAt!)),
                     style: const TextStyle(fontSize: 13, color: Colors.black54),
                   ),
                 ],

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import '../../core/app_strings.dart';
 
 enum SpaceCategory {
-  planet('Планета', Icons.public),
-  mission('Миссия', Icons.rocket_launch),
-  telescope('Телескоп', Icons.satellite_alt);
+  planet(AppStrings.categoryPlanet, Icons.public),
+  mission(AppStrings.categoryMission, Icons.rocket_launch),
+  telescope(AppStrings.categoryTelescope, Icons.satellite_alt);
 
   const SpaceCategory(this.label, this.icon);
 

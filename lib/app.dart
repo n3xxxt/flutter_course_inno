@@ -5,6 +5,7 @@ import 'data/auth_repository.dart';
 import 'data/catalog_repository.dart';
 import 'ui/auth_gate.dart';
 import 'ui/cubits/auth_cubit.dart';
+import 'core/app_strings.dart';
 
 /// Корневой виджет приложения.
 class App extends StatelessWidget {
@@ -20,7 +21,7 @@ class App extends StatelessWidget {
       child: BlocProvider(
         create: (context) => AuthCubit(context.read<AuthRepository>()),
         child: MaterialApp(
-          title: 'Каталог космоса',
+          title: AppStrings.appTitle,
           debugShowCheckedModeBanner: false,
           theme: ThemeData(
             colorScheme: ColorScheme.fromSeed(

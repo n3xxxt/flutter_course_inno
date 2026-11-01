@@ -8,6 +8,7 @@ import '../cubits/catalog_state.dart';
 import '../widgets/space_item_card.dart';
 import '../widgets/space_item_form_sheet.dart';
 import 'details_screen.dart';
+import '../../core/app_strings.dart';
 
 class CatalogScreen extends StatefulWidget {
   const CatalogScreen({super.key});
@@ -39,7 +40,9 @@ class _CatalogScreenState extends State<CatalogScreen> {
     final cubit = context.read<CatalogCubit>();
     final added = await showSpaceItemSheet(context, onSubmit: cubit.addItem);
     if (added == true) {
-      messenger.showSnackBar(const SnackBar(content: Text('Объект добавлен')));
+      messenger.showSnackBar(
+        const SnackBar(content: Text(AppStrings.itemAdded)),
+      );
     }
   }
 
@@ -76,7 +79,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Каталог космоса',
+                  AppStrings.appTitle,
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
@@ -85,7 +88,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                 ),
                 if (loaded != null)
                   Text(
-                    '${loaded.items.length} объектов в каталоге',
+                    AppStrings.itemsInCatalog(loaded.items.length),
                     style: const TextStyle(fontSize: 13, color: Colors.black54),
                   ),
               ],
@@ -93,12 +96,12 @@ class _CatalogScreenState extends State<CatalogScreen> {
             actions: [
               IconButton(
                 icon: const Icon(Icons.add),
-                tooltip: 'Добавить объект',
+                tooltip: AppStrings.addItem,
                 onPressed: loaded == null ? null : () => _add(context),
               ),
               IconButton(
                 icon: const Icon(Icons.logout),
-                tooltip: 'Выйти',
+                tooltip: AppStrings.signOut,
                 onPressed: () => context.read<AuthCubit>().signOut(),
               ),
             ],
@@ -115,13 +118,13 @@ class _CatalogScreenState extends State<CatalogScreen> {
                         enabled: loaded != null,
                         onChanged: cubit.search,
                         decoration: InputDecoration(
-                          hintText: 'Поиск по названию',
+                          hintText: AppStrings.searchHint,
                           prefixIcon: const Icon(Icons.search),
                           suffixIcon: _searchController.text.isEmpty
                               ? null
                               : IconButton(
                                   icon: const Icon(Icons.clear),
-                                  tooltip: 'Очистить',
+                                  tooltip: AppStrings.clear,
                                   onPressed: () => _clearSearch(context),
                                 ),
                           isDense: true,
@@ -141,7 +144,9 @@ class _CatalogScreenState extends State<CatalogScreen> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          'В избранном: ${loaded?.favoritesCount ?? 0}',
+                          AppStrings.favoritesCount(
+                            loaded?.favoritesCount ?? 0,
+                          ),
                           style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
@@ -150,7 +155,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                         ),
                         const Spacer(),
                         FilterChip(
-                          label: const Text('Только избранные'),
+                          label: const Text(AppStrings.onlyFavorites),
                           selected: loaded?.onlyFavorites ?? false,
                           onSelected: loaded == null
                               ? null
@@ -183,10 +188,10 @@ class _CatalogScreenState extends State<CatalogScreen> {
     if (items.isEmpty) {
       final query = state.query.trim();
       final text = query.isNotEmpty
-          ? 'Ничего не найдено по запросу «$query»'
+          ? AppStrings.nothingFound(query)
           : state.onlyFavorites
-          ? 'В избранном пока пусто'
-          : 'Каталог пуст — добавьте первый объект';
+          ? AppStrings.favoritesEmpty
+          : AppStrings.catalogEmpty;
       return _EmptyView(text: text);
     }
     return ListView.separated(
@@ -251,7 +256,7 @@ class _ErrorView extends StatelessWidget {
             const Icon(Icons.cloud_off, size: 48, color: Colors.black38),
             const SizedBox(height: 12),
             const Text(
-              'Не удалось загрузить каталог',
+              AppStrings.loadFailed,
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 4),
@@ -261,7 +266,10 @@ class _ErrorView extends StatelessWidget {
               style: const TextStyle(color: Colors.black54),
             ),
             const SizedBox(height: 16),
-            FilledButton(onPressed: onRetry, child: const Text('Обновить')),
+            FilledButton(
+              onPressed: onRetry,
+              child: const Text(AppStrings.refresh),
+            ),
           ],
         ),
       ),

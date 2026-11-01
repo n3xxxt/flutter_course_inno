@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../domain/entities/space_item.dart';
+import '../core/app_strings.dart';
 
 /// Ошибка работы с каталогом с текстом для пользователя.
 class CatalogException implements Exception {
@@ -151,10 +152,10 @@ class CatalogRepository {
 
   String _message(String code) {
     return switch (code) {
-      'unavailable' || 'timeout' => 'Нет соединения с сервером',
-      'permission-denied' => 'Нет доступа к каталогу',
-      'not-found' => 'Объект уже удалён',
-      _ => 'Ошибка сервера: $code',
+      'unavailable' || 'timeout' => AppStrings.catalogNoConnection,
+      'permission-denied' => AppStrings.catalogNoAccess,
+      'not-found' => AppStrings.catalogItemGone,
+      _ => AppStrings.catalogServerError(code),
     };
   }
 }

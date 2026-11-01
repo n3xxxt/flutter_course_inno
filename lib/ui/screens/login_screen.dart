@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../cubits/login_cubit.dart';
 import '../cubits/login_state.dart';
+import '../../core/app_strings.dart';
 
 /// Экран входа и регистрации.
 class LoginScreen extends StatefulWidget {
@@ -55,12 +56,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(
-                          'Каталог космоса',
+                          AppStrings.appTitle,
                           style: Theme.of(context).textTheme.headlineSmall,
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          state.isRegister ? 'Регистрация' : 'Вход',
+                          state.isRegister
+                              ? AppStrings.loginRegistration
+                              : AppStrings.loginSignInTitle,
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                         const SizedBox(height: 20),
@@ -70,7 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           autofillHints: const [AutofillHints.email],
                           textInputAction: TextInputAction.next,
                           decoration: const InputDecoration(
-                            labelText: 'Email',
+                            labelText: AppStrings.email,
                             border: OutlineInputBorder(),
                           ),
                           onChanged: (_) => cubit.clearError(),
@@ -86,9 +89,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           ],
                           textInputAction: TextInputAction.done,
                           decoration: InputDecoration(
-                            labelText: 'Пароль',
+                            labelText: AppStrings.password,
                             helperText: state.isRegister
-                                ? 'Минимум 6 символов'
+                                ? AppStrings.passwordHelper
                                 : null,
                             border: const OutlineInputBorder(),
                             suffixIcon: IconButton(
@@ -139,8 +142,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 )
                               : Text(
                                   state.isRegister
-                                      ? 'Зарегистрироваться'
-                                      : 'Войти',
+                                      ? AppStrings.register
+                                      : AppStrings.signIn,
                                 ),
                         ),
                         const SizedBox(height: 4),
@@ -148,8 +151,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           onPressed: state.isLoading ? null : cubit.toggleMode,
                           child: Text(
                             state.isRegister
-                                ? 'Уже есть аккаунт? Войти'
-                                : 'Нет аккаунта? Зарегистрироваться',
+                                ? AppStrings.haveAccount
+                                : AppStrings.noAccount,
                           ),
                         ),
                       ],
